@@ -1,0 +1,213 @@
+---
+title: "Statistics"
+description: |
+  Tour of statistical analysis in R
+author:
+  - name: Eric Ekholm
+    affiliation: CCPS Office of Research & Evaluation
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    toc_depth: 2
+---
+
+# Overview
+
+This document is meant to provide some resources for conducting and reporting statistical analyses in R. We don't go over everything possible, but we'll discuss a handful of analyses that are pretty common, including:
+
+- t-tests,
+- correlations,
+- linear regression, and
+- logistic regression
+
+We'll use the `penguins` data from the `{palmerpenguins}` package to practice with these.
+
+```{r setup, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, fig.align = "center")
+
+#loading useful packages
+library(tidyverse)
+library(palmerpenguins)
+library(skimr) #install with install.packages("skimr") if you don't have already
+library(psych) #install with install.packages("psych")
+
+theme_set(theme_minimal())
+
+
+```
+
+
+# Descriptive Statistics
+
+I won't get too into the weeds here, but I will say that beyond the basic `mean()` and `sd()` functions in R, I really like the `skim()` function from the `{skimr}` package for getting a quick look at my data.
+
+```{r}
+skim(penguins)
+```
+
+It's also usually a good idea to graph your data before doing statistical analyses, but I'm going to skip that here.
+
+# t-tests
+
+We can test for differences in means between groups using the `t.test()` function. To conduct a two-sample t-test, we need to provide two different vectors with the data we want to compare.
+
+Let's see if male and female penguins have different body mass.
+
+To do this, we first need to get two vectors: one with the mass of male penguins and one with the mass of female penguins:
+
+```{r}
+male_mass <- penguins$body_mass_g[penguins$sex == "male"]
+female_mass <- penguins$body_mass_g[penguins$sex == "female"]
+```
+
+You can read the above as "male mass is a subset of the body_mass_g column in the penguins dataframe where the sex column in the penguins dataframe is equal to male."
+
+And once we have this, we can conduct our t-test!
+
+```{r}
+t_res <- t.test(male_mass, female_mass)
+
+```
+
+This will save the result of our analysis to the `t_res` object. We can print a summary of the results directly by just calling the object name:
+
+```{r}
+t_res
+```
+
+And we can see that there is a significant difference in these means. Males weigh (on average) about 4545 grams and females weigh (on average) about 3862 grams. Our p-value indicates that these values are significantly different.
+
+We can also look at specific elements of our object result if we want. For instance, if we just want the p-value:
+
+```{r}
+t_res$p.value
+```
+
+# Correlations
+
+Suppose we want to look at the correlations between penguins' features. First, let's just get the numeric variables in the dataframe to make this easier:
+
+```{r}
+penguins_numeric <- penguins %>%
+  select(where(is.numeric), -year) #year is technically numeric, but let's not include it
+```
+
+The easiest way to look at correlations among these variables is just to pass this whole dataframe into the `cor()` function:
+
+```{r}
+cor(penguins_numeric)
+```
+
+Except this gives us a bunch of NA's. This is because the default behavior of `cor()` is to use all of the observations. If these have any missing values, then the correlation coefficient will return as NA.
+
+To get around this, we need to set the "use" option in the `cor()` function. There are a few options, but generally the one you'll want is "pairwise.complete.obs", which will use all of the complete observations between each pair of variables.
+
+```{r}
+cor(penguins_numeric, use = "pairwise.complete.obs")
+```
+
+
+This gives us the correlation matrix. We can see, for example, that flipper length is strongly correlated (at r = .87) with body mass. If we want to save this matrix, we can assign it to an object.
+
+```{r}
+cor_res <- cor(penguins_numeric, use = "pairwise.complete.obs")
+```
+
+
+This `cor_res` object is a matrix (**not** a dataframe), so we have to access individual elements by their position if we want to extract them:
+
+```{r}
+cor_res[1, 2] #get the element in row 1, column 2
+```
+
+One thing that `cor()` doesn't do, however, is test if each correlation is significantly different from 0. One way around this is to use the `cor.test()` function (that comes standard in base R). This requires you to pass in individual vectors to test (rather than an entire data frame):
+
+```{r}
+cor.test(penguins_numeric$body_mass_g, penguins_numeric$flipper_length_mm)
+```
+
+Or you can use the `cor.ci()` function from the `{psych}` package and pass in the entire dataframe. This gives us a visual representation of the correlation matrix.
+
+```{r}
+cor_res2 <- cor.ci(penguins_numeric, use = "pairwise.complete.obs")
+```
+
+It will also give us p-values and confidence intervals for each of our correlation coefficients
+
+```{r}
+cor_res2
+```
+
+
+# Linear Regression
+
+And what if we wanted to look at predictive relationships between variables? For instance, say we wanted to look at the extent to which body mass is predicted by other features?
+
+To do this, we can use the `lm()` function that's built into R. `lm()` stands for linear model, and it takes a few different arguments. The main ones we care about are:
+
+- **formula**: the formula describing the regression we want to run,
+- **data**: the data we want to run the regression on,
+- **na.action**: what to do if the data has missing values
+
+All said, our call might look like this:
+
+```{r}
+lm_res <- lm(body_mass_g ~ flipper_length_mm + sex, data = penguins, na.action = "na.omit")
+```
+
+Here, we're running a regression where body_mass_g is the dependent variable, and flipper_length_mm and sex are the independent variables. We're using the penguins data and omitting any rows that have NA's on any of these variables. And we're saving this to an object named lm_res.
+
+If we just print out the object, we can see some information about the model:
+
+```{r}
+lm_res
+```
+
+In this case, a more useful way to look at the result is to call `summary()` on the result object. This will give use the coefficients for each of our predictors, the p-values of these coefficients, and the R-squared of the model (among other things).
+
+```{r}
+summary(lm_res)
+```
+
+So, here we can see that for each mm increase in flipper length, we expect body mass to increase by about 47 grams in penguins of the same sex. We also expect (in penguins with the same flipper length) amles to have a body mass of about 348 grams more than females. And both of these effects are significant (which we can see in the Pr >|t| column).
+
+Another nice thing about this `lm_res` object is that it has autoplot features built in. If we just call `plot()` on it, we can get a bunch of regression diagnostic plots.
+
+```{r}
+plot(lm_res)
+```
+
+
+## Other LM Features
+
+### Include all Variables
+
+Another nice trick with the `lm()` function is that we can shortcut the formula a little bit with the . placeholder:
+
+```{r}
+lm(body_mass_g ~ ., data = penguins, na.action = "na.omit")
+```
+
+This tells lm to include all of the data (other than the dependent variable) as predictors in the model, which can save us some typing.
+
+### Specify Interactions
+
+You can also specify interactions directly in the formula. For instance, if we wanted to see if there's an interaction between flipper length and sex in how they predict body mass, we could do the following:
+
+```{r}
+lm_res2 <- lm(body_mass_g ~ flipper_length_mm + sex + sex*flipper_length_mm, data = penguins,
+              na.action = "na.omit")
+
+summary(lm_res2)
+```
+
+So, here we can see that there's not a significant interaction between sex and flipper length (i.e. the effect of flipper length on body mass doesn't seem to differ between males and females).
+
+# Logistic Regression
+
+TODO
+
+# Further Reading
+
+We haven't touched on it yet, but the Rstudio team has a whole framework built around statistics and modeling. The collection of packages is called [`{tidymodels}`](https://www.tidymodels.org/), and you can check out their website and learning resources if you want to dig into that stuff.
