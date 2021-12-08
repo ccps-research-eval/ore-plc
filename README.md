@@ -4,5 +4,5 @@ This repository contains learning resources we've discussed during our ORE PLC m
 
 ## Folders
 
-1. Statistics \[[**resource**](raw.githack.com/ccps-research-eval/ore-plc/main/statistics/statistics.html)]
+1. Statistics \[[**resource**](https://raw.githack.com/ccps-research-eval/ore-plc/main/statistics/statistics.html)]
 
