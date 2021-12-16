@@ -1,0 +1,275 @@
+---
+title: "ggplot Primer"
+description: |
+  A quick tour of ggplot() in R
+author:
+  - name: Eric Ekholm
+    affiliation: CCPS Office of Research & Evaluation
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    toc_depth: 2
+---
+
+# Overview
+
+This document is meant to provide an overview of plotting in R using the `{ggplot2}` package. There's definitely not enough room to cover everything, but hopefully it's enough to get us started! In this walkthrough, we'll cover:
+
+- Plot Basics
+- Common Geoms
+- Faceting
+- Changing/Adding Labels
+- Changing Themes & Colors
+
+```{r setup, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, fig.align = "center")
+
+#loading useful packages
+library(tidyverse)
+library(palmerpenguins)
+
+```
+
+
+# Plot Basics
+
+This is way oversimplifying, but the three *main* things you need to consider when making a plot are the:
+
+1. data,
+2. aesthetics, and
+3. geoms.
+
+The **data** is probably fairly self-explanatory. It's the data that you're planning to plot. 
+
+The **aesthetics** map variables in your data to visual characteristics of your graph. These include x and y positions (which are the ones you'll use most often), but can also include things like color, fill, size, shape, and linetype (depending on what you're plotting/what type of plot you're producing).
+
+The **geoms** are "geometric objects," and they sort of combine the aesthetics and the data to produce something visual. Common geoms include lines, points, and columns/bars.
+
+An example might help. Let's consider the following:
+
+```{r}
+ggplot(data = penguins, aes(x = bill_length_mm, y = body_mass_g)) +
+  geom_point()
+```
+
+Here we're using the penguins data (from `{palmerpenguins}`), mapping the x position to the bill_length variable, mapping the y position to the body_mass variable, and telling ggplot to produce points (via `geom_point()`).
+
+If we wanted, we could also color points by their species by specifying a color aesthetic:
+
+```{r}
+ggplot(data = penguins, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point()
+```
+
+Note that this also gives us a legend on the side that tells us which species our colors correspond to.
+
+## Things to Notice
+
+A few things you might notice in the above:
+
+- We used the `+` operator to combine our initial call to `ggplot()` with our call to `geom_point()`. This is how ggplot works, and it makes sense when you consider that ggplot actually layers things on top of one another. So what we're actually doing in the above is creating a base graph where x position corresponds to the bill length variable, y position corresponds to the body mass variable, and color corresponds to the species variable. We're then layering points on top of this base graph.
+- `geom_point()` didn't actually take any arguments. This is because, by default, individual geoms inherit features defined in the initial call to `ggplot()`. If you ever want to override features, you can set `inherit = FALSE` within a geom. You can also define data and aesthetics within a given geom. For example, we could create the same plot as above with the following code:
+
+```{r}
+ggplot() +
+  geom_point(data = penguins, aes(x = bill_length_mm, y = body_mass_g, color = species))
+```
+
+# Different Geoms
+
+ggplot offers a ton of different geoms, and there are lots ggplot extensions that provide even more geoms. That said, there are a handful you'll use most often. These include:
+
+- `geom_point()` for scatterplots,
+- `geom_col()` for barplots,
+- `geom_line()` for line graphs, and
+- `geom_histogram()` for histograms
+
+Regardless of which geom you want to use, the basic use of ggplot is the same, although the way you think about the aesthetics will change.
+
+Let's start with a histogram of body mass. This will automatically count penguins for you, so the only aesthetic we need to provide is the x variable:
+
+```{r}
+ggplot(penguins) +
+  geom_histogram(aes(x = body_mass_g))
+```
+
+Some other geoms might require you to summarize your data before plotting. For instance, `geom_col()` expects us to have one row per column. Let's imagine we want to plot the average mass by penguin species. We'd need to calculate the average first, then create our bar plot:
+
+```{r}
+penguins %>%
+  group_by(species) %>%
+  summarize(avg_mass = mean(body_mass_g, na.rm = TRUE)) %>%
+  ggplot(aes(x = species, y = avg_mass, fill = species)) + #note that 'fill' will fill our bars different colors
+  geom_col()
+```
+
+
+Imagine we want to count the number of Gentoo penguins each year & create a line graph. We'd also need to do this counting beforehand:
+
+```{r}
+penguins %>%
+  filter(species == "Gentoo") %>%
+  count(year) %>%
+  ggplot(aes(x = year, y = n)) + #note the default variable name when you count is 'n'
+  geom_line()
+```
+
+Not the prettiest graph, but we can address that later.
+
+# Faceting
+
+Faceting lets you create a bunch of "stuck-together mini-plots" within the same larger plot. This can be useful to separate different types of data, and is especially useful once we start to have a lot of variables we want to include in a single plot.
+
+For example, let's revisit a previous plot:
+
+```{r}
+ggplot(data = penguins, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point()
+```
+
+
+This includes all of our penguin species in the same plot. Another approach here might be to give each species its own facet. We can do this via `facet_wrap()` or `facet_grid()` (I tend to use wrap the vast majority of the time).
+
+```{r}
+ggplot(data = penguins, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  facet_wrap(vars(species))
+```
+
+
+In this case, this doesn't really do much that our first plot didn't. However, what if we also wanted to look at penguins by species and by island. Faceting might allow us another way to convey this new variable:
+
+```{r}
+ggplot(data = penguins, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  facet_wrap(vars(island))
+```
+
+
+This plot gives as a very different view of the data than our previous plot.
+
+# Changing & Adding Labels
+
+One other common thing we'll want to do is add titles and change axis labels. By default, plots don't have titles and the axis (and color/fill) labels are whatever we pass into `aes()`.
+
+So consider the one of our earlier plots:
+
+```{r}
+ggplot(data = penguins, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point()
+```
+
+
+We could improve this by adding a title and cleaning up the axis titles. We do this with `labs()` (short for labels).
+
+```{r}
+ggplot(data = penguins, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  labs(
+    title = "Penguin Plot!",
+    subtitle = "A subtitle",
+    x = "Bill Length (mm)",
+    y = "Body Mass (g)"
+  )
+```
+
+Changing the name of the legend is also doable, but requires a different function:
+
+```{r}
+ggplot(data = penguins, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  labs(
+    title = "Penguin Plot!",
+    subtitle = "A subtitle",
+    x = "Bill Length (mm)",
+    y = "Body Mass (g)"
+  ) +
+  scale_color_discrete(
+    name = "Penguin Species"
+  )
+```
+
+
+We use `scale_color_discrete()` here (because we want to change options of our color scale, and it is discrete (i.e. categorical) rather than continuous). Then we change the name of this scale.
+
+# Changing Themes and Using Custom Colors
+
+One other thing we can do to alter the appearance of our plots is to use a theme. There are some pre-built themes in ggplot as well as themes other people have made (you can check out the [`{ggthemes}`](https://yutannihilation.github.io/allYourFigureAreBelongToUs/ggthemes/) package for lots of pre-built themes).
+
+My favorite built-in theme is `theme_minimal()`. You can apply this theme via:
+
+```{r}
+ggplot(data = penguins, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  labs(
+    title = "Penguin Plot!",
+    subtitle = "A subtitle",
+    x = "Bill Length (mm)",
+    y = "Body Mass (g)"
+  ) +
+  scale_color_discrete(
+    name = "Penguin Species"
+  ) +
+  theme_minimal()
+```
+
+I have my own theme (`theme_ee()`) that I built that's part of my personal miscellaneous package. This is the one I use in most of my work:
+
+```{r}
+#remotes::install_github(ekholme/eemisc) to install my personal package
+library(eemisc)
+
+ggplot(data = penguins, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  labs(
+    title = "Penguin Plot!",
+    subtitle = "A subtitle",
+    x = "Bill Length (mm)",
+    y = "Body Mass (g)"
+  ) +
+  scale_color_discrete(
+    name = "Penguin Species"
+  ) +
+  theme_ee()
+```
+
+
+Another thing you might want to do is change the colors you're using. ggplot has some built in options, and there are tons of extension libraries offering color palettes (just google "ggplot color palettes"). For instance, let's use the new `{tayloRswift}` package, that has T-Swift-inspired colors:
+
+```{r}
+#install.packages("tayloRswift") if you don't have it installed already
+library(tayloRswift)
+
+ggplot(data = penguins, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  labs(
+    title = "Penguin Plot!",
+    subtitle = "A subtitle",
+    x = "Bill Length (mm)",
+    y = "Body Mass (g)"
+  ) +
+  scale_color_taylor(palette = "taylor1989") +
+  theme_ee()
+```
+
+You can see the [package's GitHub repo](https://github.com/asteves/tayloRswift) for more info on the palettes available.
+
+Another way to change colors is to just tell the plot the exact color you want. This is most useful when you're not using color to indicate (for example) a penguin species, but you just don't want your points to be black. We do this by passing the "color" argument to `geom_point()` (or any other geom) **outside** of the `aes()` call:
+
+
+```{r}
+ggplot(data = penguins, aes(x = bill_length_mm, y = body_mass_g)) +
+  geom_point(color = "red") +
+  labs(
+    title = "Penguin Plot!",
+    subtitle = "A subtitle",
+    x = "Bill Length (mm)",
+    y = "Body Mass (g)"
+  ) +
+  theme_ee()
+```
+
+# Closing Thoughts
+
+`{ggplot2}` is very customizable, and this only scratches the surface of what you can do. That said, I think this provides a strong intro into ggplot, and it covers the foundations that will help you make clean plots to include in reports and whatnot.
