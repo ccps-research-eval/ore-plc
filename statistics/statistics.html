@@ -93,8 +93,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 
 
   <!--  https://schema.org/Article -->
-  <meta property="article:published" itemprop="datePublished" content="2021-12-08" />
-  <meta property="article:created" itemprop="dateCreated" content="2021-12-08" />
+  <meta property="article:published" itemprop="datePublished" content="2021-12-16" />
+  <meta property="article:created" itemprop="dateCreated" content="2021-12-16" />
   <meta name="article:author" content="Eric Ekholm" />
 
   <!--  https://developers.facebook.com/docs/sharing/webmasters#markup -->
@@ -112,7 +112,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--radix_placeholder_rmarkdown_metadata-->
 
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Statistics"]},{"type":"character","attributes":{},"value":["Tour of statistical analysis in R\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","affiliation"]}},"value":[{"type":"character","attributes":{},"value":["Eric Ekholm"]},{"type":"character","attributes":{},"value":["CCPS Office of Research & Evaluation"]}]}]},{"type":"character","attributes":{},"value":["2021-12-08"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["toc","toc_depth"]}},"value":[{"type":"logical","attributes":{},"value":[true]},{"type":"integer","attributes":{},"value":[2]}]}]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Statistics"]},{"type":"character","attributes":{},"value":["Tour of statistical analysis in R\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","affiliation"]}},"value":[{"type":"character","attributes":{},"value":["Eric Ekholm"]},{"type":"character","attributes":{},"value":["CCPS Office of Research & Evaluation"]}]}]},{"type":"character","attributes":{},"value":["2021-12-16"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["toc","toc_depth"]}},"value":[{"type":"logical","attributes":{},"value":[true]},{"type":"integer","attributes":{},"value":[2]}]}]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
   
@@ -1459,7 +1459,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <!--radix_placeholder_front_matter-->
 
 <script id="distill-front-matter" type="text/json">
-{"title":"Statistics","description":"Tour of statistical analysis in R","authors":[{"author":"Eric Ekholm","authorURL":"#","affiliation":"CCPS Office of Research & Evaluation","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-12-08T00:00:00.000-05:00","citationText":"Ekholm, 2021"}
+{"title":"Statistics","description":"Tour of statistical analysis in R","authors":[{"author":"Eric Ekholm","authorURL":"#","affiliation":"CCPS Office of Research & Evaluation","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-12-16T00:00:00.000-05:00","citationText":"Ekholm, 2021"}
 </script>
 
 <!--/radix_placeholder_front_matter-->
@@ -1478,7 +1478,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <div class="d-byline">
   Eric Ekholm  (CCPS Office of Research &amp; Evaluation)
   
-<br />2021-12-08
+<br />2021-12-16
 </div>
 
 <div class="d-article">
@@ -1846,16 +1846,16 @@ body_mass_g        0.60  -0.47   0.87  1.00
 
  scale correlations and bootstrapped confidence intervals 
               lower.emp lower.norm estimate upper.norm upper.emp p
-bll_l_-bll_d_     -0.33      -0.33    -0.24      -0.15     -0.15 0
-bll_l_-flp__       0.59       0.59     0.66       0.72      0.71 0
-bll_l_-bdy__       0.52       0.53     0.60       0.66      0.65 0
-bll_d_-flp__      -0.63      -0.63    -0.58      -0.53     -0.53 0
-bll_d_-bdy__      -0.51      -0.53    -0.47      -0.41     -0.41 0
-flp__-bdy__        0.85       0.85     0.87       0.90      0.89 0</code></pre>
+bll_l_-bll_d_     -0.31      -0.32    -0.24      -0.14     -0.15 0
+bll_l_-flp__       0.59       0.58     0.66       0.72      0.72 0
+bll_l_-bdy__       0.52       0.52     0.60       0.66      0.66 0
+bll_d_-flp__      -0.64      -0.63    -0.58      -0.53     -0.53 0
+bll_d_-bdy__      -0.54      -0.53    -0.47      -0.41     -0.42 0
+flp__-bdy__        0.84       0.85     0.87       0.89      0.89 0</code></pre>
 </div>
 <h1 id="linear-regression">Linear Regression</h1>
 <p>And what if we wanted to look at predictive relationships between variables? For instance, say we wanted to look at the extent to which body mass is predicted by other features?</p>
-<p>To do this, we can use the <code>lm()</code> function that’s built into R. <code>lm()</code> stands for linear model, and it takes a few different arguments. The main ones we care about are:</p>
+<p>To do this, we can use the <code>lm()</code> function that’s built into R. <code>lm()</code> stands for <strong>l</strong>inear <strong>m</strong>odel, and it takes a few different arguments. The main ones we care about are:</p>
 <ul>
 <li><strong>formula</strong>: the formula describing the regression we want to run,</li>
 <li><strong>data</strong>: the data we want to run the regression on,</li>
@@ -1979,10 +1979,62 @@ F-statistic: 455.2 on 3 and 329 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 <p>So, here we can see that there’s not a significant interaction between sex and flipper length (i.e. the effect of flipper length on body mass doesn’t seem to differ between males and females).</p>
 <h1 id="logistic-regression">Logistic Regression</h1>
-<p>TODO</p>
+<p>Finally, what if the outcome variable we wanted to predict was a binary (yes/no) variable? To do this, we’d want to run a logistic regression. If you’re interested in reading more about logistic regression, I really like <a href="https://scholarworks.umass.edu/pare/vol17/iss1/11/">this article</a>.</p>
+<p>Running a logistic regression is remarkably similar to running a linear regression in R, except you use the <code>glm()</code> function (for <strong>g</strong>eneralized <strong>l</strong>inear <strong>m</strong>odel). Like the name suggests, <code>glm()</code> is useful for running several generalizations of the linear model, but the most common one (in our case) is logistic regression.</p>
+<p>Let’s imagine we want to predict whether a penguin is male (where sex is a binary variable). We could run the following logistic regression:</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="va">log_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html">glm</a></span><span class="op">(</span><span class="va">sex</span> <span class="op">~</span> <span class="va">body_mass_g</span> <span class="op">+</span> <span class="va">flipper_length_mm</span>, data <span class="op">=</span> <span class="va">penguins</span>,
+               family <span class="op">=</span> <span class="st">&quot;binomial&quot;</span><span class="op">)</span>
+</code></pre>
+</div>
+</div>
+<p>Where we have the same type of formula as before (except with sex as the outcome), and a data argument. We also have a “family” argument that we need to specify. For logistic regression, the family we want to use is “binomial.”</p>
+<p>Note that if you use a binary (2-value) factor variable as the outcome in a logistic regression, R will assume that the factor mapped to the largest underlying integer is the one you’re predicting (i.e. in our sex column, the underlying value of “male” is 2 and the underlying value of “female” is 1. You can compare <code>unclass(penguins$sex)</code> to <code>penguins$sex</code> to see this)</p>
+<p>We can then view the results of this similar to how we did previously with the linear regression model:</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">log_res</span><span class="op">)</span>
+</code></pre>
+</div>
+<pre><code>
+Call:
+glm(formula = sex ~ body_mass_g + flipper_length_mm, family = &quot;binomial&quot;, 
+    data = penguins)
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-1.9901  -0.9598   0.2442   0.8898   2.1068  
+
+Coefficients:
+                    Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)        7.0868039  2.6621921   2.662  0.00777 ** 
+body_mass_g        0.0027820  0.0003923   7.092 1.32e-12 ***
+flipper_length_mm -0.0932568  0.0199664  -4.671 3.00e-06 ***
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 461.61  on 332  degrees of freedom
+Residual deviance: 371.98  on 330  degrees of freedom
+  (11 observations deleted due to missingness)
+AIC: 377.98
+
+Number of Fisher Scoring iterations: 4</code></pre>
+</div>
+<p>So what does this tell us? Both body mass and flipper length are significantly related to penguin sex. It also tells us that as body mass increases, the log odds of being a male increase (by .002 for each 1 gram increase in mass). Likewise, the log odds of being a male decrease by .09 for each 1mm increase in flipper length. We can convert these into odds to make them slightly easier to interpret by exponentiating them:</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">log_res</span><span class="op">$</span><span class="va">coefficients</span><span class="op">)</span>
+</code></pre>
+</div>
+<pre><code>      (Intercept)       body_mass_g flipper_length_mm 
+     1196.0789489         1.0027859         0.9109595 </code></pre>
+</div>
 <h1 id="further-reading">Further Reading</h1>
 <p>We haven’t touched on it yet, but the Rstudio team has a whole framework built around statistics and modeling. The collection of packages is called <a href="https://www.tidymodels.org/"><code>{tidymodels}</code></a>, and you can check out their website and learning resources if you want to dig into that stuff.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>

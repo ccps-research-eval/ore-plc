@@ -144,7 +144,7 @@ cor_res2
 
 And what if we wanted to look at predictive relationships between variables? For instance, say we wanted to look at the extent to which body mass is predicted by other features?
 
-To do this, we can use the `lm()` function that's built into R. `lm()` stands for linear model, and it takes a few different arguments. The main ones we care about are:
+To do this, we can use the `lm()` function that's built into R. `lm()` stands for **l**inear **m**odel, and it takes a few different arguments. The main ones we care about are:
 
 - **formula**: the formula describing the regression we want to run,
 - **data**: the data we want to run the regression on,
@@ -206,7 +206,33 @@ So, here we can see that there's not a significant interaction between sex and f
 
 # Logistic Regression
 
-TODO
+Finally, what if the outcome variable we wanted to predict was a binary (yes/no) variable? To do this, we'd want to run a logistic regression. If you're interested in reading more about logistic regression, I really like [this article](https://scholarworks.umass.edu/pare/vol17/iss1/11/).
+
+Running a logistic regression is remarkably similar to running a linear regression in R, except you use the `glm()` function (for **g**eneralized **l**inear **m**odel). Like the name suggests, `glm()` is useful for running several generalizations of the linear model, but the most common one (in our case) is logistic regression.
+
+Let's imagine we want to predict whether a penguin is male (where sex is a binary variable). We could run the following logistic regression:
+
+```{r}
+log_res <- glm(sex ~ body_mass_g + flipper_length_mm, data = penguins,
+               family = "binomial")
+```
+
+Where we have the same type of formula as before (except with sex as the outcome), and a data argument. We also have a "family" argument that we need to specify. For logistic regression, the family we want to use is "binomial."
+
+Note that if you use a binary (2-value) factor variable as the outcome in a logistic regression, R will assume that the factor mapped to the largest underlying integer is the one you're predicting (i.e. in our sex column, the underlying value of "male" is 2 and the underlying value of "female" is 1. You can compare `unclass(penguins$sex)` to `penguins$sex` to see this)
+
+We can then view the results of this similar to how we did previously with the linear regression model:
+
+```{r}
+summary(log_res)
+```
+
+So what does this tell us? Both body mass and flipper length are significantly related to penguin sex. It also tells us that as body mass increases, the log odds of being a male increase (by .002 for each 1 gram increase in mass). Likewise, the log odds of being a male decrease by .09 for each 1mm increase in flipper length. We can convert these into odds to make them slightly easier to interpret by exponentiating them:
+
+```{r}
+exp(log_res$coefficients)
+```
+
 
 # Further Reading
 
