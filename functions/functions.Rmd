@@ -1,0 +1,200 @@
+---
+title: "Functions Primer"
+description: |
+  An intro to functions in R
+author:
+  - name: Eric Ekholm
+    affiliation: CCPS Office of Research & Evaluation
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    toc_depth: 2
+---
+
+# Overview
+
+Functions! This document provides an overview of functions and how you can use them to consolidate your code.
+
+```{r setup, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, fig.align = "center")
+
+#loading useful packages
+library(tidyverse)
+library(palmerpenguins)
+library(janitor)
+
+```
+
+# What is a Function?
+
+A function is a chunk of code that takes one (or more) inputs and returns one output. Pretty much everything you do in R is a function, including all of the following:
+
+- things from the tidyverse, like `mutate()`
+- things in base R, like `c()`,
+- arithmetic operators, like `+`
+
+You can write your own function using the `function()` function. For example:
+
+```{r}
+times_two <- function(x) {
+  x*2
+}
+```
+
+This creates a new function named "times_two" that takes a single argument, x. Inside the body of the function (between the curly braces), we define what this function does, which is multiply x by two.
+
+We can then call this function:
+
+```{r}
+times_two(2)
+```
+
+```{r}
+times_two(x = 100)
+```
+
+We can also call this function inside other functions. For example, we can use it inside `mutate()`:
+
+```{r}
+penguins %>%
+  mutate(body_mass2 = times_two(body_mass_g)) %>%
+  select(body_mass_g, body_mass2) %>%
+  head()
+```
+
+
+# Extending Our Function 
+
+Let's say we wanted to extend our `times_two()` function. Instead of multiplying x by two, what if we want to multiply x by y?
+
+```{r}
+multiply <- function(x, y) {
+  x * y
+}
+```
+
+We now have a function (named `multiply`) with two inputs, x and y. We can call this like we did our previous function:
+
+```{r}
+multiply(2, 2)
+```
+
+```{r}
+multiply(2, 10)
+```
+
+We can also pass a vector into x and multiply each element of that vector by y:
+
+```{r}
+multiply(1:5, 2) 
+```
+
+And we can use this inside another function:
+
+```{r}
+penguins %>%
+  mutate(bm_fliplen = multiply(body_mass_g, flipper_length_mm)) %>%
+  select(body_mass_g, flipper_length_mm, bm_fliplen) %>%
+  head()
+```
+
+
+## Setting Default Values
+
+Suppose that, in our multiply function, we want to multiply x by 2 *most of the time* but want people to have the option to provide another value? We can set 2 as the default value for y that people can overwrite if they want.
+
+```{r}
+multiply <- function(x, y = 2) {
+  x * y
+}
+```
+
+Now, if we don't provide a y value, our function will just assume we want to multiply by 2
+
+```{r}
+multiply(x = 3)
+```
+
+But we *can* provide a y value to overwrite this default:
+
+```{r}
+multiply(x = 3, y = 3)
+```
+
+# Using Functions as Wrappers
+
+One nice thing about functions is that we can "wrap" them around larger chunks of code to either simplify that code or represent it more succinctly. For example, imagine it's common practice for us to take the penguins data, filter down to a specific species of penguin, and then get the average body mass for that penguin. Let's do this with the Adelie penguins first. We could write this code:
+
+```{r}
+penguins %>%
+  filter(species == "Adelie") %>%
+  summarize(avg_mass = mean(body_mass_g, na.rm = TRUE))
+```
+
+But suppose we want to do this with each species. Or suppose this is common enough that we want to do it in multiple documents. We might want to wrap this whole chunk of code in a function.
+
+```{r}
+average_penguin_mass <- function(filt_species) {
+  penguins %>%
+    filter(species == filt_species) %>%
+    summarize(avg_mass = mean(body_mass_g, na.rm = TRUE))
+}
+
+average_penguin_mass(filt_species = "Adelie")
+```
+
+In the above, we create a new function `average_penguin_mass()` that has one argument: species. We can tell the function which species we want to calculate the avg mass for, and it will do that. Essentially, we're converting our 3 lines of code into 1.
+
+And we can pass in other species names easily:
+
+```{r}
+average_penguin_mass("Gentoo")
+```
+
+
+This could be useful for us if we wanted to, for instance, calculate absences by school -- we could write a function that took a "school" argument to filter results down to a specific school.
+
+# Writing Tidyverse Functions
+
+Writing functions that play nicely with the tidyverse can be a little more difficult than the example above indicates. One nice thing about the tidyverse is that you can pass in unquoted variable names to functions, and tidyverse functions know how to handle them. For example, we can pass `body_mass_g` as an unquoted variable to summarize, and it knows what we want:
+
+```{r}
+penguins %>%
+  summarize(avg_mass = mean(body_mass_g, na.rm = TRUE))
+```
+
+
+When writing a function, you might want to get the mean of whatever variable you pass into that function. However, for some under-the-hood technical reasons, the following won't work:
+
+```{r, eval = FALSE}
+penguin_summarize <- function(var) {
+  penguins %>%
+    summarize(avg = mean(var, na.rm = TRUE))
+}
+
+penguin_summarize(body_mass_g)
+```
+
+
+You can read some more about this phenomenon in [this article](https://dplyr.tidyverse.org/articles/programming.html) or in the [metaprogramming section of the Advanced R book](https://adv-r.hadley.nz/metaprogramming.html) if you want, but quick fix is that if you want to write functions that use unquoted variables in the tidyverse, you need to *embrace* these variables by using {{ }}:
+
+```{r}
+penguin_summarize <- function(var) {
+  penguins %>%
+    summarize(avg = mean({{ var }}, na.rm = TRUE))
+}
+
+penguin_summarize(body_mass_g)
+```
+
+```{r}
+penguin_summarize(flipper_length_mm)
+```
+
+
+# Further Reading
+
+If you want to get into the weeds of functions, you can read [this chapter in *Advanced R*](https://adv-r.hadley.nz/functions.html).
+
+If you want to learn more about programming (writing functions) with the tidyverse, you can read [this article](https://dplyr.tidyverse.org/articles/programming.html)
