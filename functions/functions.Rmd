@@ -197,7 +197,7 @@ penguin_summarize(flipper_length_mm)
 
 To illustrate a function we might actually use, let's walk through the `fetch_grades()` function from `{ccpsr}`. This function lets users fetch the grades data for students for a given year. It also lets users decide if they want grades for all students or only secondary students. Here's the full code for the function (no worries if some of it doesn't make sense):
 
-```{r f-g-full, eval = FALSE}
+```{}
 fetch_grades <- function(year, secondary_only = TRUE) {
 
   #check that year is numeric
@@ -217,11 +217,9 @@ fetch_grades <- function(year, secondary_only = TRUE) {
 
   #configure connection to ccps databases
   con <- ccpsr::set_con()
-
-  #query database and save data
-  tmp <- odbc::dbGetQuery(
-    con, 
-    paste0("SELECT gr.*,
+  
+  #create our query
+  q <- paste0("SELECT gr.*,
            cr.Academic_Type
            FROM [CCPS_Shared].[CCPS_Shared].[RE_Student_GP_Grades] gr 
            LEFT JOIN (
@@ -230,7 +228,9 @@ fetch_grades <- function(year, secondary_only = TRUE) {
            FROM [CCPS_Shared].[CCPS_Shared].[RE_Courses]) cr 
            ON gr.Course_Id = cr.COURSE_ID
            WHERE SchYr = ", year)
-    )
+
+  #query database and save data
+  tmp <- odbc::dbGetQuery(con, q)
 
   #filter data to only secondary schools if secondary_only option is set to TRUE
   ret <- if (secondary_only == TRUE) {
@@ -330,17 +330,15 @@ Any time we can to use the value of the `year` argument provided by the user in 
 
 After the function checks to make sure the arguments are valid, it then connects to and queries the database to return students' grade data via the following code:
 
-```{r, eval = FALSE}
+```{}
 fetch_grades <- function(year, secondary_only = TRUE) {
   #argument checks here...
   
   #configure connection to ccps databases
   con <- ccpsr::set_con()
 
-  #query database and save data
-  tmp <- odbc::dbGetQuery(
-    con, 
-    paste0("SELECT gr.*,
+  #create our query
+  q <- paste0("SELECT gr.*,
            cr.Academic_Type
            FROM [CCPS_Shared].[CCPS_Shared].[RE_Student_GP_Grades] gr 
            LEFT JOIN (
@@ -349,7 +347,9 @@ fetch_grades <- function(year, secondary_only = TRUE) {
            FROM [CCPS_Shared].[CCPS_Shared].[RE_Courses]) cr 
            ON gr.Course_Id = cr.COURSE_ID
            WHERE SchYr = ", year)
-    )
+
+  #query database and save data
+  tmp <- odbc::dbGetQuery(con, q)
   
   #more code here...
 }

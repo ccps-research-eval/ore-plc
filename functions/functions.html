@@ -1744,32 +1744,28 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </div>
 <h1 id="walking-through-a-ccpsr-function">Walking through a {ccpsr} Function</h1>
 <p>To illustrate a function we might actually use, let’s walk through the <code>fetch_grades()</code> function from <code>{ccpsr}</code>. This function lets users fetch the grades data for students for a given year. It also lets users decide if they want grades for all students or only secondary students. Here’s the full code for the function (no worries if some of it doesn’t make sense):</p>
-<div class="layout-chunk" data-layout="l-body">
-<div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class="va">fetch_grades</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">year</span>, <span class="va">secondary_only</span> <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span>
+<pre><code>fetch_grades &lt;- function(year, secondary_only = TRUE) {
 
-  <span class="co">#check that year is numeric</span>
-  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html">is.numeric</a></span><span class="op">(</span><span class="va">year</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
-    <span class="fu">rlang</span><span class="fu">::</span><span class="fu"><a href="https://rlang.r-lib.org/reference/abort.html">abort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">&quot;`year` must be an integer, not &quot;</span>, <span class="fu"><a href="https://rdrr.io/r/base/typeof.html">typeof</a></span><span class="op">(</span><span class="va">year</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
-  <span class="op">}</span>
+  #check that year is numeric
+  if (!is.numeric(year)) {
+    rlang::abort(paste0(&quot;`year` must be an integer, not &quot;, typeof(year)))
+  }
 
-  <span class="co">#check school year value</span>
-  <span class="kw">if</span> <span class="op">(</span><span class="va">year</span> <span class="op">&lt;</span> <span class="fl">2014</span><span class="op">)</span> <span class="op">{</span>
-    <span class="fu">rlang</span><span class="fu">::</span><span class="fu"><a href="https://rlang.r-lib.org/reference/abort.html">abort</a></span><span class="op">(</span><span class="st">&quot;Grades are only available from 2014 onward&quot;</span><span class="op">)</span>
-  <span class="op">}</span>
+  #check school year value
+  if (year &lt; 2014) {
+    rlang::abort(&quot;Grades are only available from 2014 onward&quot;)
+  }
   
-  <span class="co">#check that secondary_only is logical</span>
-  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/logical.html">is.logical</a></span><span class="op">(</span><span class="va">secondary_only</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
-    <span class="fu">rlang</span><span class="fu">::</span><span class="fu"><a href="https://rlang.r-lib.org/reference/abort.html">abort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">&quot;`secondary_only` must be logical, not &quot;</span>, <span class="fu"><a href="https://rdrr.io/r/base/typeof.html">typeof</a></span><span class="op">(</span><span class="va">secondary_only</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
-  <span class="op">}</span>
+  #check that secondary_only is logical
+  if (!is.logical(secondary_only)) {
+    rlang::abort(paste0(&quot;`secondary_only` must be logical, not &quot;, typeof(secondary_only)))
+  }
 
-  <span class="co">#configure connection to ccps databases</span>
-  <span class="va">con</span> <span class="op">&lt;-</span> <span class="fu">ccpsr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/ccpsr/man/set_con.html">set_con</a></span><span class="op">(</span><span class="op">)</span>
-
-  <span class="co">#query database and save data</span>
-  <span class="va">tmp</span> <span class="op">&lt;-</span> <span class="fu">odbc</span><span class="fu">::</span><span class="fu">dbGetQuery</span><span class="op">(</span>
-    <span class="va">con</span>, 
-    <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">&quot;SELECT gr.*,
+  #configure connection to ccps databases
+  con &lt;- ccpsr::set_con()
+  
+  #create our query
+  q &lt;- paste0(&quot;SELECT gr.*,
            cr.Academic_Type
            FROM [CCPS_Shared].[CCPS_Shared].[RE_Student_GP_Grades] gr 
            LEFT JOIN (
@@ -1777,25 +1773,25 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
            Academic_Type
            FROM [CCPS_Shared].[CCPS_Shared].[RE_Courses]) cr 
            ON gr.Course_Id = cr.COURSE_ID
-           WHERE SchYr = &quot;</span>, <span class="va">year</span><span class="op">)</span>
-    <span class="op">)</span>
+           WHERE SchYr = &quot;, year)
 
-  <span class="co">#filter data to only secondary schools if secondary_only option is set to TRUE</span>
-  <span class="va">ret</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">secondary_only</span> <span class="op">==</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span>
+  #query database and save data
+  tmp &lt;- odbc::dbGetQuery(con, q)
 
-      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">tmp</span>, <span class="va">SchoolCode</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="fu">ccpsr</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/ccpsr/man/secondary_school_codes.html">secondary_school_codes</a></span><span class="op">)</span>
+  #filter data to only secondary schools if secondary_only option is set to TRUE
+  ret &lt;- if (secondary_only == TRUE) {
 
-  <span class="op">}</span> <span class="kw">else</span> <span class="va">tmp</span>
+      dplyr::filter(tmp, SchoolCode %in% ccpsr::secondary_school_codes)
 
-  <span class="va">ret</span> <span class="op">&lt;-</span> <span class="fu">janitor</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/janitor/man/clean_names.html">clean_names</a></span><span class="op">(</span><span class="va">ret</span><span class="op">)</span>
+  } else tmp
 
-  <span class="co">#return the &#39;ret&#39; object</span>
-  <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">ret</span><span class="op">)</span>
+  ret &lt;- janitor::clean_names(ret)
 
-<span class="op">}</span>
+  #return the &#39;ret&#39; object
+  return(ret)
+
+}
 </code></pre>
-</div>
-</div>
 <h2 id="function-arguments">Function Arguments</h2>
 <p>We can execute the function by calling it like this:</p>
 <div class="layout-chunk" data-layout="l-body">
@@ -1875,18 +1871,14 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <p>Any time we can to use the value of the <code>year</code> argument provided by the user in the function, we provide the variable <code>year</code> to our code.</p>
 <h2 id="querying-the-database">Querying the Database</h2>
 <p>After the function checks to make sure the arguments are valid, it then connects to and queries the database to return students’ grade data via the following code:</p>
-<div class="layout-chunk" data-layout="l-body">
-<div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class="va">fetch_grades</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">year</span>, <span class="va">secondary_only</span> <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span>
-  <span class="co">#argument checks here...</span>
+<pre><code>fetch_grades &lt;- function(year, secondary_only = TRUE) {
+  #argument checks here...
   
-  <span class="co">#configure connection to ccps databases</span>
-  <span class="va">con</span> <span class="op">&lt;-</span> <span class="fu">ccpsr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/ccpsr/man/set_con.html">set_con</a></span><span class="op">(</span><span class="op">)</span>
+  #configure connection to ccps databases
+  con &lt;- ccpsr::set_con()
 
-  <span class="co">#query database and save data</span>
-  <span class="va">tmp</span> <span class="op">&lt;-</span> <span class="fu">odbc</span><span class="fu">::</span><span class="fu">dbGetQuery</span><span class="op">(</span>
-    <span class="va">con</span>, 
-    <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">&quot;SELECT gr.*,
+  #create our query
+  q &lt;- paste0(&quot;SELECT gr.*,
            cr.Academic_Type
            FROM [CCPS_Shared].[CCPS_Shared].[RE_Student_GP_Grades] gr 
            LEFT JOIN (
@@ -1894,14 +1886,13 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
            Academic_Type
            FROM [CCPS_Shared].[CCPS_Shared].[RE_Courses]) cr 
            ON gr.Course_Id = cr.COURSE_ID
-           WHERE SchYr = &quot;</span>, <span class="va">year</span><span class="op">)</span>
-    <span class="op">)</span>
+           WHERE SchYr = &quot;, year)
+
+  #query database and save data
+  tmp &lt;- odbc::dbGetQuery(con, q)
   
-  <span class="co">#more code here...</span>
-<span class="op">}</span>
-</code></pre>
-</div>
-</div>
+  #more code here...
+}</code></pre>
 <p>The first thing this does is run the <code>set_con()</code> function from <code>{ccpsr}</code> to connect to our databases. This uses our computers’ login credentials to connect “automagically”.</p>
 <p>Next, we query the database like we typically would, using <code>dbGetQuery()</code> from the <code>{odbc}</code> package. The one wrinkle here is that instead of writing out a “typical” SQL query, we want to include our <code>year</code> variable. We can do this by passing the whole query into the <code>paste0()</code> function, which essentially “pastes” strings together. So the last line of the query above (beginning with “WHERE…”) will set SchYr (in our SQL query) equal to whatever value of <code>year</code> we passed into the function.</p>
 <p>If we want, we can show this behavior with the following function:</p>
@@ -1946,7 +1937,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <h1 id="further-reading">Further Reading</h1>
 <p>If you want to get into the weeds of functions, you can read <a href="https://adv-r.hadley.nz/functions.html">this chapter in <em>Advanced R</em></a>.</p>
 <p>If you want to learn more about programming (writing functions) with the tidyverse, you can read <a href="https://dplyr.tidyverse.org/articles/programming.html">this article</a></p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>
