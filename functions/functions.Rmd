@@ -193,6 +193,216 @@ penguin_summarize(flipper_length_mm)
 ```
 
 
+# Walking through a {ccpsr} Function
+
+To illustrate a function we might actually use, let's walk through the `fetch_grades()` function from `{ccpsr}`. This function lets users fetch the grades data for students for a given year. It also lets users decide if they want grades for all students or only secondary students. Here's the full code for the function (no worries if some of it doesn't make sense):
+
+```{r f-g-full, eval = FALSE}
+fetch_grades <- function(year, secondary_only = TRUE) {
+
+  #check that year is numeric
+  if (!is.numeric(year)) {
+    rlang::abort(paste0("`year` must be an integer, not ", typeof(year)))
+  }
+
+  #check school year value
+  if (year < 2014) {
+    rlang::abort("Grades are only available from 2014 onward")
+  }
+  
+  #check that secondary_only is logical
+  if (!is.logical(secondary_only)) {
+    rlang::abort(paste0("`secondary_only` must be logical, not ", typeof(secondary_only)))
+  }
+
+  #configure connection to ccps databases
+  con <- ccpsr::set_con()
+
+  #query database and save data
+  tmp <- odbc::dbGetQuery(
+    con, 
+    paste0("SELECT gr.*,
+           cr.Academic_Type
+           FROM [CCPS_Shared].[CCPS_Shared].[RE_Student_GP_Grades] gr 
+           LEFT JOIN (
+           SELECT COURSE_ID,
+           Academic_Type
+           FROM [CCPS_Shared].[CCPS_Shared].[RE_Courses]) cr 
+           ON gr.Course_Id = cr.COURSE_ID
+           WHERE SchYr = ", year)
+    )
+
+  #filter data to only secondary schools if secondary_only option is set to TRUE
+  ret <- if (secondary_only == TRUE) {
+
+      dplyr::filter(tmp, SchoolCode %in% ccpsr::secondary_school_codes)
+
+  } else tmp
+
+  ret <- janitor::clean_names(ret)
+
+  #return the 'ret' object
+  return(ret)
+
+}
+
+```
+
+## Function Arguments
+
+We can execute the function by calling it like this:
+
+```{r, eval = FALSE}
+#library(ccpsr) -- we will need to load the library first
+fetch_grades(year = 2018, secondary_only = TRUE)
+```
+
+This will fetch students' grades for the 2018 school year, and it will only fetch grades for secondary students. Let's look back at the function definition to understand these arguments.
+
+```{r}
+fetch_grades <- function(year, secondary_only = TRUE) {
+  #some code in here
+}
+```
+
+This tells us that we're creating a function named `fetch_grades`, and that this function will have 2 arguments: `year` and `secondary_only`. We can also see that `year` is the first argument and `secondary_only` is the second argument. These arguments get "passed in" to the function and tell it how to perform its calculations, which we'll see shortly. `R` also lets you provide arguments to functions using the position, so we could call the function like this if we wanted:
+
+```{r, eval = FALSE}
+fetch_grades(2018, TRUE)
+```
+
+Furthermore, in our function definition, we've provided a *default value* of `TRUE` to `secondary_only`. This tells our function that, if we don't provide a value for the `secondary_only` argument, it will use `TRUE`. So the following function call is equivalent to the previous two:
+
+```{r, eval = FALSE}
+fetch_grades(2018)
+```
+
+## Value Checks
+
+Now that we understand the function arguments, we can dive into the *body* of the function -- everything between the curly braces. This is the code that actually gets executed when you call the function.
+
+Let's take a look at the first few lines of code inside `fetch_grades()`:
+
+```{r, eval = FALSE}
+fetch_grades <- function(year, secondary_only = TRUE) {
+
+  #check that year is numeric
+  if (!is.numeric(year)) {
+    rlang::abort(paste0("`year` must be an integer, not ", typeof(year)))
+  }
+
+  #check school year value
+  if (year < 2014) {
+    rlang::abort("Grades are only available from 2014 onward")
+  }
+  
+  #check that secondary_only is logical
+  if (!is.logical(secondary_only)) {
+    rlang::abort(paste0("`secondary_only` must be logical, not ", typeof(secondary_only)))
+  }
+  
+  #more code below...
+}
+```
+
+These three chunks of code make sure that we're passing valid values into our function. The first one checks to make sure that the value of the `year` argument is numeric; the second one checks that the value of the `year` argument is not less than 2014 (since grade data is only available from 2014 onward); and the third one checks to make sure that the value of `secondary_only` is logical (either `TRUE` or `FALSE`). If any of these checks fail, the function will return the associated error message to the user.
+
+It's super important that you write these sorts of checks when you first start writing functions, especially if you're the primary person using your functions. Once other people start using functions you write, it can be helpful to provide some checks and error messages for them.
+
+What is worth understanding here, though, is that these checks are using the values passed into the arguments by the users. For example, note that the check below makes sure that the `year` value is numeric:
+
+```{r, eval = FALSE}
+fetch_grades <- function(year, secondary_only = TRUE) {
+
+  #check that year is numeric
+  if (!is.numeric(year)) {
+    rlang::abort(paste0("`year` must be an integer, not ", typeof(year)))
+  }
+  
+  #more code below...
+}
+```
+
+
+Any time we can to use the value of the `year` argument provided by the user in the function, we provide the variable `year` to our code.
+
+## Querying the Database
+
+After the function checks to make sure the arguments are valid, it then connects to and queries the database to return students' grade data via the following code:
+
+```{r, eval = FALSE}
+fetch_grades <- function(year, secondary_only = TRUE) {
+  #argument checks here...
+  
+  #configure connection to ccps databases
+  con <- ccpsr::set_con()
+
+  #query database and save data
+  tmp <- odbc::dbGetQuery(
+    con, 
+    paste0("SELECT gr.*,
+           cr.Academic_Type
+           FROM [CCPS_Shared].[CCPS_Shared].[RE_Student_GP_Grades] gr 
+           LEFT JOIN (
+           SELECT COURSE_ID,
+           Academic_Type
+           FROM [CCPS_Shared].[CCPS_Shared].[RE_Courses]) cr 
+           ON gr.Course_Id = cr.COURSE_ID
+           WHERE SchYr = ", year)
+    )
+  
+  #more code here...
+}
+```
+
+
+The first thing this does is run the `set_con()` function from `{ccpsr}` to connect to our databases. This uses our computers' login credentials to connect "automagically".
+
+Next, we query the database like we typically would, using `dbGetQuery()` from the `{odbc}` package. The one wrinkle here is that instead of writing out a "typical" SQL query, we want to include our `year` variable. We can do this by passing the whole query into the `paste0()` function, which essentially "pastes" strings together. So the last line of the query above (beginning with "WHERE...") will set SchYr (in our SQL query) equal to whatever value of `year` we passed into the function.
+
+If we want, we can show this behavior with the following function:
+
+```{r}
+paste_year <- function(year) {
+  paste0("Value of year is ", year)
+}
+
+paste_year(2018)
+```
+
+So anyway, `fetch_grades()` then executes the query and saves the resulting data to a variable named `tmp` (short for "temporary")
+
+## Return Data
+
+So far, we've passed our two arguments (`year` and `secondary_only`) into our function, checked that the argument values are valid, and executed a SQL query that uses the `year` value to retrieve grades only for that year. The last few lines of our function will (optionally) filter the data a bit more and then return the data to the user:
+
+```{r, eval = FALSE}
+fetch_grades <- function(year, secondary_only = TRUE) {
+  #more code up here...
+  
+  #filter data to only secondary schools if secondary_only option is set to TRUE
+  ret <- if (secondary_only == TRUE) {
+
+      dplyr::filter(tmp, SchoolCode %in% ccpsr::secondary_school_codes)
+
+  } else tmp
+
+  ret <- janitor::clean_names(ret)
+
+  #return the 'ret' object to the user
+  return(ret)
+}
+```
+
+
+The first thing we're doing in this block of code is looking at the value of the `secondary_only` argument (which, remember, can only be `TRUE` or `FALSE` thanks to our code checks). If the value of `secondary_only` is `TRUE`, we'll take our `tmp` variable (which is the data returned from the query) and further filter it to only contain data for students in secondary schools, then assign this result to a variable called `ret` (short for "return"). To do this, the function uses the `secondary_school_codes` data built into `{ccpsr}`. If the value of `secondary_only` is `FALSE`, the function won't do this filtering and will just assign all of the data in `tmp` to `ret`.
+
+Next, the function will use the `clean_names()` function from the `{janitor}` package on our `ret` variable to make the column names easier to work with.
+
+Finally, we call the `return()` function to return the `ret` variable to the user. Technically, we can just type `ret` in this last line (we don't actually need `return()`), but I think it illustrates that we're returning this value. It's worth noting that `R` functions can only return a single object, but this object can be of any type (e.g. a vector, data frame, list, etc).
+
+et voila, that's our function!
+
 # Further Reading
 
 If you want to get into the weeds of functions, you can read [this chapter in *Advanced R*](https://adv-r.hadley.nz/functions.html).

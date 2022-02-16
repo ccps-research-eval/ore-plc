@@ -93,8 +93,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 
 
   <!--  https://schema.org/Article -->
-  <meta property="article:published" itemprop="datePublished" content="2021-12-17" />
-  <meta property="article:created" itemprop="dateCreated" content="2021-12-17" />
+  <meta property="article:published" itemprop="datePublished" content="2022-02-16" />
+  <meta property="article:created" itemprop="dateCreated" content="2022-02-16" />
   <meta name="article:author" content="Eric Ekholm" />
 
   <!--  https://developers.facebook.com/docs/sharing/webmasters#markup -->
@@ -112,7 +112,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--radix_placeholder_rmarkdown_metadata-->
 
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Functions Primer"]},{"type":"character","attributes":{},"value":["An intro to functions in R\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","affiliation"]}},"value":[{"type":"character","attributes":{},"value":["Eric Ekholm"]},{"type":"character","attributes":{},"value":["CCPS Office of Research & Evaluation"]}]}]},{"type":"character","attributes":{},"value":["2021-12-17"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["toc","toc_depth"]}},"value":[{"type":"logical","attributes":{},"value":[true]},{"type":"integer","attributes":{},"value":[2]}]}]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Functions Primer"]},{"type":"character","attributes":{},"value":["An intro to functions in R\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","affiliation"]}},"value":[{"type":"character","attributes":{},"value":["Eric Ekholm"]},{"type":"character","attributes":{},"value":["CCPS Office of Research & Evaluation"]}]}]},{"type":"character","attributes":{},"value":["2022-02-16"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["toc","toc_depth"]}},"value":[{"type":"logical","attributes":{},"value":[true]},{"type":"integer","attributes":{},"value":[2]}]}]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
   
@@ -1459,7 +1459,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <!--radix_placeholder_front_matter-->
 
 <script id="distill-front-matter" type="text/json">
-{"title":"Functions Primer","description":"An intro to functions in R","authors":[{"author":"Eric Ekholm","authorURL":"#","affiliation":"CCPS Office of Research & Evaluation","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-12-17T00:00:00.000-05:00","citationText":"Ekholm, 2021"}
+{"title":"Functions Primer","description":"An intro to functions in R","authors":[{"author":"Eric Ekholm","authorURL":"#","affiliation":"CCPS Office of Research & Evaluation","affiliationURL":"#","orcidID":""}],"publishedDate":"2022-02-16T00:00:00.000-05:00","citationText":"Ekholm, 2022"}
 </script>
 
 <!--/radix_placeholder_front_matter-->
@@ -1478,7 +1478,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <div class="d-byline">
   Eric Ekholm  (CCPS Office of Research &amp; Evaluation)
   
-<br />2021-12-17
+<br />2022-02-16
 </div>
 
 <div class="d-article">
@@ -1494,6 +1494,13 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </ul></li>
 <li><a href="#using-functions-as-wrappers">Using Functions as Wrappers</a></li>
 <li><a href="#writing-tidyverse-functions">Writing Tidyverse Functions</a></li>
+<li><a href="#walking-through-a-ccpsr-function">Walking through a {ccpsr} Function</a>
+<ul>
+<li><a href="#function-arguments">Function Arguments</a></li>
+<li><a href="#value-checks">Value Checks</a></li>
+<li><a href="#querying-the-database">Querying the Database</a></li>
+<li><a href="#return-data">Return Data</a></li>
+</ul></li>
 <li><a href="#further-reading">Further Reading</a></li>
 </ul>
 </nav>
@@ -1735,10 +1742,211 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   &lt;dbl&gt;
 1  201.</code></pre>
 </div>
+<h1 id="walking-through-a-ccpsr-function">Walking through a {ccpsr} Function</h1>
+<p>To illustrate a function we might actually use, let’s walk through the <code>fetch_grades()</code> function from <code>{ccpsr}</code>. This function lets users fetch the grades data for students for a given year. It also lets users decide if they want grades for all students or only secondary students. Here’s the full code for the function (no worries if some of it doesn’t make sense):</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="va">fetch_grades</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">year</span>, <span class="va">secondary_only</span> <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span>
+
+  <span class="co">#check that year is numeric</span>
+  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html">is.numeric</a></span><span class="op">(</span><span class="va">year</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
+    <span class="fu">rlang</span><span class="fu">::</span><span class="fu"><a href="https://rlang.r-lib.org/reference/abort.html">abort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">&quot;`year` must be an integer, not &quot;</span>, <span class="fu"><a href="https://rdrr.io/r/base/typeof.html">typeof</a></span><span class="op">(</span><span class="va">year</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+  <span class="op">}</span>
+
+  <span class="co">#check school year value</span>
+  <span class="kw">if</span> <span class="op">(</span><span class="va">year</span> <span class="op">&lt;</span> <span class="fl">2014</span><span class="op">)</span> <span class="op">{</span>
+    <span class="fu">rlang</span><span class="fu">::</span><span class="fu"><a href="https://rlang.r-lib.org/reference/abort.html">abort</a></span><span class="op">(</span><span class="st">&quot;Grades are only available from 2014 onward&quot;</span><span class="op">)</span>
+  <span class="op">}</span>
+  
+  <span class="co">#check that secondary_only is logical</span>
+  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/logical.html">is.logical</a></span><span class="op">(</span><span class="va">secondary_only</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
+    <span class="fu">rlang</span><span class="fu">::</span><span class="fu"><a href="https://rlang.r-lib.org/reference/abort.html">abort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">&quot;`secondary_only` must be logical, not &quot;</span>, <span class="fu"><a href="https://rdrr.io/r/base/typeof.html">typeof</a></span><span class="op">(</span><span class="va">secondary_only</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+  <span class="op">}</span>
+
+  <span class="co">#configure connection to ccps databases</span>
+  <span class="va">con</span> <span class="op">&lt;-</span> <span class="fu">ccpsr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/ccpsr/man/set_con.html">set_con</a></span><span class="op">(</span><span class="op">)</span>
+
+  <span class="co">#query database and save data</span>
+  <span class="va">tmp</span> <span class="op">&lt;-</span> <span class="fu">odbc</span><span class="fu">::</span><span class="fu">dbGetQuery</span><span class="op">(</span>
+    <span class="va">con</span>, 
+    <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">&quot;SELECT gr.*,
+           cr.Academic_Type
+           FROM [CCPS_Shared].[CCPS_Shared].[RE_Student_GP_Grades] gr 
+           LEFT JOIN (
+           SELECT COURSE_ID,
+           Academic_Type
+           FROM [CCPS_Shared].[CCPS_Shared].[RE_Courses]) cr 
+           ON gr.Course_Id = cr.COURSE_ID
+           WHERE SchYr = &quot;</span>, <span class="va">year</span><span class="op">)</span>
+    <span class="op">)</span>
+
+  <span class="co">#filter data to only secondary schools if secondary_only option is set to TRUE</span>
+  <span class="va">ret</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">secondary_only</span> <span class="op">==</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span>
+
+      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">tmp</span>, <span class="va">SchoolCode</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="fu">ccpsr</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/ccpsr/man/secondary_school_codes.html">secondary_school_codes</a></span><span class="op">)</span>
+
+  <span class="op">}</span> <span class="kw">else</span> <span class="va">tmp</span>
+
+  <span class="va">ret</span> <span class="op">&lt;-</span> <span class="fu">janitor</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/janitor/man/clean_names.html">clean_names</a></span><span class="op">(</span><span class="va">ret</span><span class="op">)</span>
+
+  <span class="co">#return the &#39;ret&#39; object</span>
+  <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">ret</span><span class="op">)</span>
+
+<span class="op">}</span>
+</code></pre>
+</div>
+</div>
+<h2 id="function-arguments">Function Arguments</h2>
+<p>We can execute the function by calling it like this:</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#library(ccpsr) -- we will need to load the library first</span>
+<span class="fu">fetch_grades</span><span class="op">(</span>year <span class="op">=</span> <span class="fl">2018</span>, secondary_only <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
+</code></pre>
+</div>
+</div>
+<p>This will fetch students’ grades for the 2018 school year, and it will only fetch grades for secondary students. Let’s look back at the function definition to understand these arguments.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="va">fetch_grades</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">year</span>, <span class="va">secondary_only</span> <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span>
+  <span class="co">#some code in here</span>
+<span class="op">}</span>
+</code></pre>
+</div>
+</div>
+<p>This tells us that we’re creating a function named <code>fetch_grades</code>, and that this function will have 2 arguments: <code>year</code> and <code>secondary_only</code>. We can also see that <code>year</code> is the first argument and <code>secondary_only</code> is the second argument. These arguments get “passed in” to the function and tell it how to perform its calculations, which we’ll see shortly. <code>R</code> also lets you provide arguments to functions using the position, so we could call the function like this if we wanted:</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="fu">fetch_grades</span><span class="op">(</span><span class="fl">2018</span>, <span class="cn">TRUE</span><span class="op">)</span>
+</code></pre>
+</div>
+</div>
+<p>Furthermore, in our function definition, we’ve provided a <em>default value</em> of <code>TRUE</code> to <code>secondary_only</code>. This tells our function that, if we don’t provide a value for the <code>secondary_only</code> argument, it will use <code>TRUE</code>. So the following function call is equivalent to the previous two:</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="fu">fetch_grades</span><span class="op">(</span><span class="fl">2018</span><span class="op">)</span>
+</code></pre>
+</div>
+</div>
+<h2 id="value-checks">Value Checks</h2>
+<p>Now that we understand the function arguments, we can dive into the <em>body</em> of the function – everything between the curly braces. This is the code that actually gets executed when you call the function.</p>
+<p>Let’s take a look at the first few lines of code inside <code>fetch_grades()</code>:</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="va">fetch_grades</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">year</span>, <span class="va">secondary_only</span> <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span>
+
+  <span class="co">#check that year is numeric</span>
+  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html">is.numeric</a></span><span class="op">(</span><span class="va">year</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
+    <span class="fu">rlang</span><span class="fu">::</span><span class="fu"><a href="https://rlang.r-lib.org/reference/abort.html">abort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">&quot;`year` must be an integer, not &quot;</span>, <span class="fu"><a href="https://rdrr.io/r/base/typeof.html">typeof</a></span><span class="op">(</span><span class="va">year</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+  <span class="op">}</span>
+
+  <span class="co">#check school year value</span>
+  <span class="kw">if</span> <span class="op">(</span><span class="va">year</span> <span class="op">&lt;</span> <span class="fl">2014</span><span class="op">)</span> <span class="op">{</span>
+    <span class="fu">rlang</span><span class="fu">::</span><span class="fu"><a href="https://rlang.r-lib.org/reference/abort.html">abort</a></span><span class="op">(</span><span class="st">&quot;Grades are only available from 2014 onward&quot;</span><span class="op">)</span>
+  <span class="op">}</span>
+  
+  <span class="co">#check that secondary_only is logical</span>
+  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/logical.html">is.logical</a></span><span class="op">(</span><span class="va">secondary_only</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
+    <span class="fu">rlang</span><span class="fu">::</span><span class="fu"><a href="https://rlang.r-lib.org/reference/abort.html">abort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">&quot;`secondary_only` must be logical, not &quot;</span>, <span class="fu"><a href="https://rdrr.io/r/base/typeof.html">typeof</a></span><span class="op">(</span><span class="va">secondary_only</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+  <span class="op">}</span>
+  
+  <span class="co">#more code below...</span>
+<span class="op">}</span>
+</code></pre>
+</div>
+</div>
+<p>These three chunks of code make sure that we’re passing valid values into our function. The first one checks to make sure that the value of the <code>year</code> argument is numeric; the second one checks that the value of the <code>year</code> argument is not less than 2014 (since grade data is only available from 2014 onward); and the third one checks to make sure that the value of <code>secondary_only</code> is logical (either <code>TRUE</code> or <code>FALSE</code>). If any of these checks fail, the function will return the associated error message to the user.</p>
+<p>It’s super important that you write these sorts of checks when you first start writing functions, especially if you’re the primary person using your functions. Once other people start using functions you write, it can be helpful to provide some checks and error messages for them.</p>
+<p>What is worth understanding here, though, is that these checks are using the values passed into the arguments by the users. For example, note that the check below makes sure that the <code>year</code> value is numeric:</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="va">fetch_grades</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">year</span>, <span class="va">secondary_only</span> <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span>
+
+  <span class="co">#check that year is numeric</span>
+  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html">is.numeric</a></span><span class="op">(</span><span class="va">year</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
+    <span class="fu">rlang</span><span class="fu">::</span><span class="fu"><a href="https://rlang.r-lib.org/reference/abort.html">abort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">&quot;`year` must be an integer, not &quot;</span>, <span class="fu"><a href="https://rdrr.io/r/base/typeof.html">typeof</a></span><span class="op">(</span><span class="va">year</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+  <span class="op">}</span>
+  
+  <span class="co">#more code below...</span>
+<span class="op">}</span>
+</code></pre>
+</div>
+</div>
+<p>Any time we can to use the value of the <code>year</code> argument provided by the user in the function, we provide the variable <code>year</code> to our code.</p>
+<h2 id="querying-the-database">Querying the Database</h2>
+<p>After the function checks to make sure the arguments are valid, it then connects to and queries the database to return students’ grade data via the following code:</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="va">fetch_grades</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">year</span>, <span class="va">secondary_only</span> <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span>
+  <span class="co">#argument checks here...</span>
+  
+  <span class="co">#configure connection to ccps databases</span>
+  <span class="va">con</span> <span class="op">&lt;-</span> <span class="fu">ccpsr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/ccpsr/man/set_con.html">set_con</a></span><span class="op">(</span><span class="op">)</span>
+
+  <span class="co">#query database and save data</span>
+  <span class="va">tmp</span> <span class="op">&lt;-</span> <span class="fu">odbc</span><span class="fu">::</span><span class="fu">dbGetQuery</span><span class="op">(</span>
+    <span class="va">con</span>, 
+    <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">&quot;SELECT gr.*,
+           cr.Academic_Type
+           FROM [CCPS_Shared].[CCPS_Shared].[RE_Student_GP_Grades] gr 
+           LEFT JOIN (
+           SELECT COURSE_ID,
+           Academic_Type
+           FROM [CCPS_Shared].[CCPS_Shared].[RE_Courses]) cr 
+           ON gr.Course_Id = cr.COURSE_ID
+           WHERE SchYr = &quot;</span>, <span class="va">year</span><span class="op">)</span>
+    <span class="op">)</span>
+  
+  <span class="co">#more code here...</span>
+<span class="op">}</span>
+</code></pre>
+</div>
+</div>
+<p>The first thing this does is run the <code>set_con()</code> function from <code>{ccpsr}</code> to connect to our databases. This uses our computers’ login credentials to connect “automagically”.</p>
+<p>Next, we query the database like we typically would, using <code>dbGetQuery()</code> from the <code>{odbc}</code> package. The one wrinkle here is that instead of writing out a “typical” SQL query, we want to include our <code>year</code> variable. We can do this by passing the whole query into the <code>paste0()</code> function, which essentially “pastes” strings together. So the last line of the query above (beginning with “WHERE…”) will set SchYr (in our SQL query) equal to whatever value of <code>year</code> we passed into the function.</p>
+<p>If we want, we can show this behavior with the following function:</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="va">paste_year</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">year</span><span class="op">)</span> <span class="op">{</span>
+  <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">&quot;Value of year is &quot;</span>, <span class="va">year</span><span class="op">)</span>
+<span class="op">}</span>
+
+<span class="fu">paste_year</span><span class="op">(</span><span class="fl">2018</span><span class="op">)</span>
+</code></pre>
+</div>
+<pre><code>[1] &quot;Value of year is 2018&quot;</code></pre>
+</div>
+<p>So anyway, <code>fetch_grades()</code> then executes the query and saves the resulting data to a variable named <code>tmp</code> (short for “temporary”)</p>
+<h2 id="return-data">Return Data</h2>
+<p>So far, we’ve passed our two arguments (<code>year</code> and <code>secondary_only</code>) into our function, checked that the argument values are valid, and executed a SQL query that uses the <code>year</code> value to retrieve grades only for that year. The last few lines of our function will (optionally) filter the data a bit more and then return the data to the user:</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class="va">fetch_grades</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">year</span>, <span class="va">secondary_only</span> <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span>
+  <span class="co">#more code up here...</span>
+  
+  <span class="co">#filter data to only secondary schools if secondary_only option is set to TRUE</span>
+  <span class="va">ret</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">secondary_only</span> <span class="op">==</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span>
+
+      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">tmp</span>, <span class="va">SchoolCode</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="fu">ccpsr</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/ccpsr/man/secondary_school_codes.html">secondary_school_codes</a></span><span class="op">)</span>
+
+  <span class="op">}</span> <span class="kw">else</span> <span class="va">tmp</span>
+
+  <span class="va">ret</span> <span class="op">&lt;-</span> <span class="fu">janitor</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/janitor/man/clean_names.html">clean_names</a></span><span class="op">(</span><span class="va">ret</span><span class="op">)</span>
+
+  <span class="co">#return the &#39;ret&#39; object to the user</span>
+  <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">ret</span><span class="op">)</span>
+<span class="op">}</span>
+</code></pre>
+</div>
+</div>
+<p>The first thing we’re doing in this block of code is looking at the value of the <code>secondary_only</code> argument (which, remember, can only be <code>TRUE</code> or <code>FALSE</code> thanks to our code checks). If the value of <code>secondary_only</code> is <code>TRUE</code>, we’ll take our <code>tmp</code> variable (which is the data returned from the query) and further filter it to only contain data for students in secondary schools, then assign this result to a variable called <code>ret</code> (short for “return”). To do this, the function uses the <code>secondary_school_codes</code> data built into <code>{ccpsr}</code>. If the value of <code>secondary_only</code> is <code>FALSE</code>, the function won’t do this filtering and will just assign all of the data in <code>tmp</code> to <code>ret</code>.</p>
+<p>Next, the function will use the <code>clean_names()</code> function from the <code>{janitor}</code> package on our <code>ret</code> variable to make the column names easier to work with.</p>
+<p>Finally, we call the <code>return()</code> function to return the <code>ret</code> variable to the user. Technically, we can just type <code>ret</code> in this last line (we don’t actually need <code>return()</code>), but I think it illustrates that we’re returning this value. It’s worth noting that <code>R</code> functions can only return a single object, but this object can be of any type (e.g. a vector, data frame, list, etc).</p>
+<p>et voila, that’s our function!</p>
 <h1 id="further-reading">Further Reading</h1>
 <p>If you want to get into the weeds of functions, you can read <a href="https://adv-r.hadley.nz/functions.html">this chapter in <em>Advanced R</em></a>.</p>
 <p>If you want to learn more about programming (writing functions) with the tidyverse, you can read <a href="https://dplyr.tidyverse.org/articles/programming.html">this article</a></p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>
