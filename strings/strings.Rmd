@@ -1,0 +1,127 @@
+---
+title: "Working with Strings"
+description: |
+  Working with Strings in R
+author:
+  - name: Eric Ekholm
+    affiliation: CCPS Office of Research & Evaluation
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    toc_depth: 2
+---
+
+Some snippets to help working with strings.
+
+```{r}
+# load packages
+library(tidyverse)
+library(ccpsr)
+
+schs <- ccpsr::title_i$organization_name
+```
+
+The vast majority of the functions we're using will come from `{stringr}`
+
+## Detect a pattern in a string
+
+This will return a vector with values of either TRUE or FALSE. Useful for filtering.
+
+```{r}
+x <- str_detect(schs, "Midlo")
+
+sum(x) # will return the total # of trues
+```
+
+## Subset a string
+
+`str_subset()` will take a subset of a character vector that matches a pattern
+
+```{r}
+str_subset(schs, "Midlo")
+```
+
+## Count the number of characters in a string
+
+```{r}
+str_length(schs)
+```
+
+## Basic Regex
+
+Regex -- or regular expressions -- provide a standardized way to work with text across multiple programming languages. SQL also uses regex, so some of this might be familiar. Here's a [cheat sheet](https://www.rexegg.com/regex-quickstart.html) that I reference, but some very basic ideas:
+
+- `^` indicates the start of a string
+- `$` indicates the end of a string
+
+So we can get any schools that start with M via:
+
+```{r}
+str_subset(schs, "^M")
+
+```
+
+Or any schools that end with "HS" via:
+
+```{r}
+str_subset(schs, "HS$")
+```
+
+`.` is a wildcard operator (i.e. it represents anything), and `*` means "0 or more times". You can combine them so that `.*` means "anything"
+
+```{r}
+schs[1:5] == str_subset(schs[1:5], ".*")
+```
+
+We'll see how this can be useful later.
+
+`\\d` represents a digit. `+` represents "one or more times". We can combine these to, for instance, get strings that have a digit in them:
+
+```{r}
+str_subset(schs, "\\d+")
+```
+
+To get schools that don't have a digit, we can use the `negate` argument of `str_subset`:
+
+```{r}
+str_subset(schs, "\\d+", negate = TRUE)
+```
+
+There are a few of these that are useful for us:
+
+- \\w is "any word character"; \\W is "anything that is not a word character",
+- \\s is "space"; \\S is "not space"
+
+## Replace a string based on a pattern
+
+We can replace a string using `str_replace_all()`. Note that `str_replace()` is also a function, but it will only replace the first instance, and 99.9% of the time it isn't what we want.
+
+```{r}
+#will replace every e with a z.
+str_replace_all(schs, "e", "z")
+#note that this is case sensitive
+```
+
+Another useful regex feature is that we can create "groups" with `()`. And we can then access these groups by number
+
+```{r}
+test_string <- "two words"
+
+str_replace_all(test_string, "(two) (words)", "\\1")
+#\\1 means 'return the stuff in the first set of parens'
+```
+
+Let's combine somme of this to select the first word in each school's name:
+
+```{r}
+str_replace_all(schs, "^(\\S+).*$", "\\1")
+```
+
+This looks a little daunting, but we're:
+
+- Getting the start of the word with `^`
+- Getting everything that isn't a space with `\\S`
+- Wrapping `\\S` in parentheses to say "this is our first group",
+- Selecting "everything not in the first group until the end" with `.*$`
+- Returning the first group with `\\1`
