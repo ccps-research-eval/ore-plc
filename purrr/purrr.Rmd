@@ -1,0 +1,252 @@
+---
+title: "purrr Primer"
+description: |
+  A quick tour of {purrr} and iteration
+author:
+  - name: Eric Ekholm
+    affiliation: CCPS Office of Research & Evaluation
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    toc_depth: 2
+---
+
+# Overview
+
+`{purrr}` is an R package (that's part of the core tidyverse) that helps with iteration (doing something multiple times). There are several ways you can iterate in R code (e.g. using `for` loops, using the `apply()` family of functions), and there are use cases for each, but we're going to focus on the `{purrr}` functions here.
+
+To start, let's set everything up. To use `{purrr}`, we just need to load the `{tidyverse}`. We'll also load `{palmerpenguins}` to get some data to play with.
+
+```{r setup, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, fig.align = "center")
+
+library(tidyverse)
+library(palmerpenguins)
+
+```
+
+# What Is Iteration?
+
+Let's start here. Iteration allows us to do something/perform some operation multiple times while slightly tweaking the way in which that thing is done. For example, suppose we want to prepend "hello" to each of our names.
+
+```{r}
+nms <- c("Eric", "Jenna", "Patty")
+
+```
+
+We could do:
+
+```{r}
+paste0("hello ", nms[1])
+```
+
+```{r}
+paste0("hello ", nms[2])
+```
+
+```{r}
+paste0("hello ", nms[3])
+```
+
+But this isn't really efficient. We're running the same code, but just altering one argument.
+
+# Enter {purrr}
+
+An alternative is to use the `map()` function from `{purrr}` to iterate multiple inputs to the function:
+
+```{r}
+map(nms, ~paste0("hello ", .x))
+```
+
+This is doing the following:
+
+- For each element of `nms` (our vector of names),
+- Pass the element into `paste0("hello ", .x)` at the `.x` location.
+
+*One note here is that `paste0()` is actually a vectorized function (like many functions in R), and so you don't technically need to use `map()`. The following works just as well:*
+
+```{r}
+paste0("hello ", nms)
+```
+
+*but it's a simple illustration here, I think.*
+
+One note about `map()` is that it creates a list to store the output:
+
+```{r}
+out <- map(nms, ~paste0("hello ", .x))
+
+typeof(out)
+```
+
+Remember that a list is just a sort of general-purpose container, and it can store multiple different types in it (unlike a vector). Since we often want our data in types other than a list, `{purrr}` has specified functions that can produce these different types:
+
+- `map()` makes a list
+- `map_lgl()` makes a logical vector
+- `map_dbl()` makes a double (numeric) vector
+- `map_int()` makes an integer vector 
+- `map_chr()` makes a character vector 
+
+There are also a couple of special versions that make data frame rows (`map_dfr()`) and data frame columns (`map_dfc()`).
+
+So, if we wanted the output above to be a character vector rather than a list, we can do this:
+
+```{r}
+map_chr(nms, ~ paste0("hello ", .x))
+```
+
+## map() function inputs
+
+Regardless of which version of `map()` you use, the inputs the functions take are the same. The way you'll write these functions is:
+
+```{r, eval = FALSE}
+map(.x, ~.f(...))
+```
+
+where `.x` is the thing you want to iterate over (a list or vector) and `~.f(...)` is the function you want to apply, with ... as the arguments to that function (one of which will be `.x`). *There are several different ways you can write this, but we'll just focus on this method for now*
+
+So, in the above, `nms` was our thing we wanted to iterate over (our vector of names), `~paste0(...)` was the function we we wanted to apply, and the arguments to `paste0()` were `"hello "` and `.x`.
+
+Let's look at another fairly straightforward example. Let's look at our penguins data and use `map_dbl()` to get the means of a few columns:
+
+```{r}
+#store columns in a list
+x <- list(penguins$bill_length_mm, penguins$bill_depth_mm, penguins$body_mass_g)
+
+means_out <- map_dbl(x, ~ mean(.x, na.rm = TRUE))
+
+means_out
+```
+
+So, first, we're creating a list (`x`) that contains three numeric vectors. Then, we're using `map_dbl()` because we want our output to be a numeric (double) vector. Our first argument to `map_dbl()` is the list we want to iterate over (`x` in this case). Then we're saying we want to use the `mean(...)` function (notice the ~). We're passing `x` into our mean function using `.x`, then specifying that we want the `na.rm` argument set equal to `TRUE` each time the mean function runs.
+
+One thing to note here is that, regardless of what our input (`x` in this case) is named, we reference it using `.x` the the function within `map()`. If our list of vectors was names `steve`, we'd still reference it with `.x`, e.g.
+
+```{r}
+steve <- list(
+  penguins$bill_length_mm, penguins$bill_depth_mm,
+  penguins$body_mass_g
+)
+
+means_out <- map_dbl(steve, ~ mean(.x, na.rm = TRUE))
+
+means_out
+```
+
+# Using Your Own Function
+
+`{purrr}` functions work especially well when you combine them with your own functions. Your process will often (but not always) be:
+
+- Write a custom function that does the core of what you need to do
+- Pass that function into `map()` (or some version of `map_*()`) to do it multiple times
+
+Let's imagine that we want to fit a regression model that uses penguin bill length and bill depth to predict body mass. And let's assume we want run this separately for each penguin species. We could do this manually, like:
+
+```{r}
+adelies <- penguins %>%
+  filter(species == "Adelie")
+
+lm(body_mass_g ~ bill_length_mm + bill_depth_mm, data = adelies)
+
+#and then do this again for each type of penguin
+```
+
+A less repetitive approach, though, might use `map()` a few times:
+
+```{r}
+# get a vector of the unique penguin species
+ps <- unique(penguins$species)
+
+# write a little filter function
+# x is the data we want
+# s is the species
+my_filter <- function(x, s) {
+  x %>%
+    filter(species == s)
+}
+
+#get a list of dataframes, where each element is a dataframe for that species
+p_dfs <- map(ps, ~my_filter(x = penguins, s = .x))
+
+# let's take a look at what this gives us
+p_dfs
+```
+
+Above, we're using our `my_filter()` function, combined with `map()` to create a separate dataframe for each penguin species, with each of these dataframes stored as an element in our list `p_dfs`.
+
+# Continuing with `map()`
+
+Now that we have a list of dataframes, we can pass that into `lm()` and fit our model multiple times:
+
+```{r}
+lm_res <- map(p_dfs,
+ ~ lm(body_mass_g ~ bill_length_mm + bill_depth_mm,
+      data = .x
+))
+```
+
+This, then, gives us a list of model outputs:
+
+```{r}
+lm_res
+```
+
+Now let's assume we want the $R^{2}$ value for each of these models, which we can get with:
+
+```{r, eval = FALSE}
+summary(obj)$r.squared
+```
+
+where `obj` is a fitted model. Since we know how to use `map()`, we can do this:
+
+```{r}
+rsqs <- map_dbl(lm_res, ~ summary(.x)$r.squared)
+
+rsqs
+```
+
+# Tying it All Together
+
+We've done a lot of things so far, and it might seem like we have a bunch of pieces of an analyses, but they're not bundled together -- we have a vector of penguin species, a list of dataframes, a list of model results, and a vector of r-squared values.
+
+One nice thing about a `tibble()` is that it can hold pretty much any type of data, so we can combine everything we've done so far in a tibble:
+
+```{r}
+analysis_res <- tibble(
+  species = ps,
+  data = p_dfs,
+  model_res = lm_res,
+  rsq = rsqs
+)
+
+analysis_res
+```
+
+And then we can do anything with this that we would do with any other tibble, like make a graph with $R^{2}$ values:
+
+```{r}
+analysis_res %>%
+  ggplot(aes(x = rsq, y = species)) +
+  geom_col()
+```
+
+Alternatively, we could have created our tibble like this:
+
+```{r}
+analysis_res2 <- tibble(
+  species = unique(penguins$species)
+) %>%
+  mutate(
+    data = map(species, ~ my_filter(penguins, .x)),
+    model_res = map(
+      data,
+      ~ lm(body_mass_g ~ bill_length_mm + bill_depth_mm, .x)
+    ),
+    rsq = map_dbl(model_res, ~ summary(.x)$r.squared)
+  )
+
+analysis_res2
+```
+
+If you look at the above lines, we can see that doing this whole analysis only took ~12 lines of code. If we manually did all of the above for each penguin species, it would have taken at least 3x as many lines, plus probably a few more for overhead and whatnot.
