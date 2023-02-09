@@ -1,0 +1,148 @@
+---
+title: "String Concatenation Primer"
+description: |
+  Using paste() and glue() to work with strings
+author:
+  - name: Eric Ekholm
+    affiliation: CCPS Office of Research & Evaluation
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    toc_depth: 2
+---
+
+# Overview
+
+One of the most common tasks when working with strings is concatenating/combining them to create new values. This brief document describes how to approach string concatenation using both the `paste()` (and its cousin, `paste0()`) and `glue()` functions.
+
+# Setup
+
+`paste()` and `paste0()` are "base" functions, but we will need to load the `{glue}` package to use `glue()`, so let's do that first. We'll also use the tidyverse for some other functionality.
+
+```{r}
+# install.packages("glue")
+# if you don't already have glue installed
+library(glue)
+library(tidyverse)
+```
+
+# Basics
+
+At a very basic level, you might want to combine to strings to make a new string. You can do this via:
+
+```{r}
+first_name <- "Taylor"
+last_name <- "Swift"
+
+paste(first_name, last_name)
+```
+
+`paste()` can take any number of strings (or other values, which it will convert to strings) and concatenate them together. 
+
+```{r}
+paste(first_name, last_name, "is the coolest")
+```
+
+`paste()` also has a `sep` argument, which defines what separates the inputs. By default, it's a single space, but you can change it to whatever you want.
+
+```{r}
+paste(first_name, last_name, sep = "_")
+```
+
+Alternatively, you can use `glue()` from the glue package. It basically does the same thing, but the syntax is a little bit different. You enclose all of your inputs in quotes and identify variables with curly braces {}.
+
+```{r}
+glue("{first_name} {last_name}")
+```
+
+Notice that we had to include a space between the variable names within our strings. `glue()` has a `.sep` argument that works the same as `sep` for paste, but it requires some additional syntax that I think makes it less readable (see below):
+
+```{r}
+glue("{first_name}", "{last_name}", .sep = " ")
+```
+
+# Using in Dataframe Operations
+
+One common way we'd use this is modifying/creating a new variable when working with data. Using the `iris` dataset, we can create a new string variable that concatenates a constant value ("species of flower:") with the `Species` variable within the dataset:
+
+```{r}
+iris |>
+    mutate(species_new = paste("species of flower:", Species)) |>
+    head() #this just shows the first few rows
+```
+
+You could also imagine doing something similar to concatenate first_name & last_name variables like we did in our initial example.
+
+If you wanted to use glue, we could do:
+
+```{r}
+iris |>
+    mutate(species_new = glue("species of flower: {Species}")) |>
+    head() #this just shows the first few rows
+```
+
+# Working with Directories & File Paths
+
+Another common task where we'll want to concatenate strings involves working with directories to create new files/new directories. For instance, imagine we have a list of schools and we want to make a new text file for each school.
+
+To start, let's get the file path to our current working directory and create a vector with names of a few schools.
+
+```{r}
+#this will just give us the file path of our current directory
+base_path <- here::here()
+
+schools <- c("school_1", "school_2", "school_3")
+```
+
+Next, we'll concatenate the file path with the school name to create a folder. You might notice that we need to include "/" in the path -- `paste0()` doesn't know that we're making a filepath here, so we need to manually include the slash to separate folders/files.
+
+Another thing to note is that we're using `paste0()` rather than `paste()` here. They're basically the same, but `paste0()` doesn't have a `sep` argument, meaning it won't separate inputs with a space or anything else. This is probably the behavior we want when working with file paths, although you can imagine a case where using "/" as your separator could be useful.
+
+```{r}
+sch_path <- paste0(base_path, "/", schools)
+
+sch_path
+```
+
+As we might have noticed when executing the dataframe example previously, `paste()` and `paste0()` are vectorized, meaning if you pass a vector to them, they'll work on vectors without needing to use any iterator (like lapply, a for loop, or map()).
+
+Then, to create the folder, we can use `dir.create()`. Let's make the first folder now:
+
+```{r}
+dir.create(sch_path[1])
+```
+
+The `dir.create()` function is not vectorized, though, so we need an iterator to make all of the folders. Let's use `lapply()` here.
+
+```{r}
+lapply(sch_path, dir.create)
+```
+
+You could achieve the same result using glue via:
+
+```{r}
+sch_path_glue <- glue("{base_path}/{schools}")
+
+sch_path_glue
+```
+
+And then we could use lapply again to create directories.
+
+We could also use the same logic to create a bunch of files if we wanted. Imagine we have a bunch of teachers in a school that each get a file:
+
+```{r}
+teachers <- c("Gatsby", "Carraway", "Buchanan")
+
+t_paths <- paste0(sch_path[1], "/", teachers, ".txt")
+
+t_paths
+```
+
+And then we can similarly use file.create to create files.
+
+```{r}
+lapply(t_paths, file.create)
+```
+
+The most common way you'll want to do this is in combination with Rmarkdown's `render()` function, which will allow you to render a bunch of different (school or teacher) files. I'm just using empty text files here as an example, but that's probably not how you'll actually be using this stuff. 
